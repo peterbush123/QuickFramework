@@ -1,0 +1,11 @@
+{
+    "include": [
+        "resources/3d/engine/native/extensions/assets-manager/AssetsManagerEx.*",
+        "resources/3d/engine/native/extensions/assets-manager/Manifest.*",
+        "resources/3d/engine/native/cocos/bindings/auto/jsb_extension_auto.cpp",
+        "resources/3d/engine/bin/.declarations/cc.d.ts",
+        "resources/3d/engine/native/cocos/application/BaseGame.cpp",
+        "resources/3d/engine/native/tools/simulator/frameworks/runtime-src/Classes/Game.cpp"
+    ],
+    "exclude": []
+}

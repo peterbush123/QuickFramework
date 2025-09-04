@@ -1,0 +1,583 @@
+import { isValid, js, Node, Prefab, Widget, instantiate, director, Component, find, View, Camera } from "cc";
+import { DEBUG } from "cc/env";
+import { ViewStatus } from "../../defines/Enums";
+import { Macro } from "../../defines/Macros";
+import AdapterView from "../adapter/AdapterView";
+import { Resource } from "../asset/Resource";
+import UIView from "./UIView";
+import { ViewAsset } from "../asset/ViewAsset";
+
+export class UIManager implements ISingleton {
+    isResident?: boolean = true;
+    static module: string = "【UI管理器】";
+    module: string = null!;
+    /**@description 视图 */
+    private _viewDatas: Map<string, ViewAsset.Data> = new Map<string, ViewAsset.Data>();
+    private getViewData(className: string): ViewAsset.Data;
+    private getViewData<T extends UIView>(uiClass: UIClass<T>): ViewAsset.Data;
+    private getViewData(data: any): ViewAsset.Data | undefined {
+        let className = this.getClassName(data);
+        if (!className) return undefined;
+        let viewData = this._viewDatas.has(className) ? this._viewDatas.get(className) : undefined;
+        return viewData;
+    }
+
+    /**
+     * @description 通过当前视图，获取视图的类型
+     * @param view 
+     * @returns 
+     */
+    public getViewType<T extends UIView>(view: UIView): UIClass<T> {
+        if (!isValid(view)) {
+            return null as any;
+        }
+
+        let className = view.className;
+        if (!className) return null as any;
+        let viewData = this._viewDatas.get(className);
+        if (viewData) {
+            return viewData.viewType as any;
+        } else {
+            return null as any;
+        }
+    }
+
+    private getClassName(className: string): string;
+    private getClassName<T extends UIView>(uiClass: UIClass<T>): string;
+    private getClassName(data: any): string | undefined {
+        if (!data) return undefined;
+        let className = undefined;
+        if (typeof data == "string") {
+            className = data;
+        }
+        else {
+            className = js.getClassName(data);
+        }
+        return className;
+    }
+
+    /**@description 无主资源 */
+    public garbage = new ViewAsset.Dynamic(Macro.DYNAMIC_LOAD_GARBAGE);
+    /**@description 驻留内存资源 */
+    public retainMemory = new ViewAsset.Dynamic(Macro.DYNAMIC_LOAD_RETAIN_MEMORY);
+
+    private defaultOpenOption(options: OpenOption) {
+        let out: DefaultOpenOption = {
+            bundle: Macro.BUNDLE_RESOURCES,
+            delay: options.delay,
+            name: options.name,
+            zIndex: 0,
+            preload: false,
+            type: options.type,
+            args: options.args,
+            isCache : App.isCacheUI
+        };
+        if (options.bundle != undefined) {
+            out.bundle = options.bundle;
+        }
+        if (options.zIndex != undefined) {
+            out.zIndex = options.zIndex;
+        }
+        if (options.preload != undefined) {
+            out.preload = options.preload;
+        }
+        if ( options.isCache != undefined ){
+            out.isCache = options.isCache;
+        }
+        return out;
+    }
+
+    /**
+     * @description 预加载视图
+     * @param uiClass 
+     * @param bundle 
+     * @returns 
+     */
+    public preload<T extends UIView>(uiClass: UIClass<T>, bundle: BUNDLE_TYPE , isCache ?: boolean) {
+        return this.open({ type: uiClass, preload: true, bundle: bundle , isCache : isCache});
+    }
+
+    private parsePrefabUrl(url: string): { isPrefab: boolean, url: string } {
+        if (url[0] == "@") {
+            return { isPrefab: false, url: url.substr(1) };
+        } else {
+            return { isPrefab: true, url: url };
+        }
+    }
+
+    /**
+     * @description 打开视图
+     * @param type UIView视图类型
+     * @param OpenOption 打开设置
+     * @param viewOption 视图显示设置参数，即UIView.show参数
+     * @returns 
+     */
+    public open<T extends UIView>(openOption: OpenOption): Promise<T> {
+        let _OpenOption = this.defaultOpenOption(openOption);
+        return this._open(_OpenOption);
+    }
+
+    private _open<T extends UIView>(openOption: DefaultOpenOption) {
+        return new Promise<T>((reslove, reject) => {
+            if (!openOption.type) {
+                if (DEBUG) Log.d(`${this.module}open ui class error`);
+                reslove(<any>null);
+                return;
+            }
+            let className = js.getClassName(openOption.type);
+
+            let root = App.layerMgr.root;
+            if (!root) {
+                if (DEBUG) Log.e(`${this.module}找不到场景的Canvas节点`);
+                reslove(<any>null);
+                return;
+            }
+            //先从缓存中获取资源
+            let viewData = App.releaseManger.getUI(className)!;
+            if( viewData ){
+                this._viewDatas.set(className, viewData);
+                viewData.status = ViewStatus.WAITTING_NONE;
+                if (!openOption.preload) {
+                    if (!viewData.node.parent) {
+                        this.addView(viewData.node, openOption.zIndex);
+                    }
+                    viewData.view.show(openOption.args);
+                }
+                reslove(<T>viewData.view);
+                return;
+            }
+            viewData = this.getViewData(openOption.type);
+            if (viewData) {
+                viewData.isPreload = openOption.preload;
+                //已经加载
+                if (viewData.isLoaded) {
+                    viewData.status = ViewStatus.WAITTING_NONE;
+                    if (!openOption.preload) {
+                        if (viewData.view && isValid(viewData.node)) {
+                            if (!viewData.node.parent) {
+                                this.addView(viewData.node, openOption.zIndex);
+                            }
+                            viewData.view.show(openOption.args);
+                        }
+                    }
+                    reslove(<T>viewData.view);
+                    return;
+                }
+                else {
+                    viewData.status = ViewStatus.WAITTING_NONE;
+                    if (!openOption.preload) {
+                        App.uiLoading.show(openOption.delay, openOption.name);
+                    }
+                    //正在加载中
+                    if (DEBUG) Log.w(`${this.module}${className} 正在加载中...`);
+                    viewData.finishCb.push(reslove);
+                    return;
+                }
+            }
+            else {
+                viewData = new ViewAsset.Data();
+                viewData.loadData.name = className;
+                let prefabUrl = openOption.type.getPrefabUrl();
+                let result = this.parsePrefabUrl(prefabUrl);
+                viewData.isPreload = openOption.preload;
+                viewData.isPrefab = result.isPrefab;
+                viewData.viewType = openOption.type;
+                viewData.bundle = openOption.bundle;
+                viewData.isCache = openOption.isCache!;
+                this._viewDatas.set(className, viewData);
+                if (!result.isPrefab) {
+                    //说明存在于主场景中
+                    viewData.cache = new Resource.Cache(result.url, Prefab, openOption.bundle);
+                    viewData.cache.data = this.getScenePrefab(result.url) as any;
+                    this.createNode(viewData, reslove, openOption);
+                    return;
+                }
+                let progressCallback: (completedCount: number, totalCount: number, item: any) => void = null!;
+
+                if (!openOption.preload) {
+                    App.uiLoading.show(openOption.delay, openOption.name);
+                    //预加载界面不显示进度
+                    progressCallback = (completedCount: number, totalCount: number, item: any) => {
+                        let progress = Math.ceil((completedCount / totalCount) * 100);
+                        App.uiLoading.updateProgress(progress);
+                    };
+                }
+                this.loadPrefab(openOption.bundle, prefabUrl, progressCallback, (cache) => {
+                    if (cache) {
+                        viewData.cache = cache;
+                        App.asset.retainAsset(cache);
+                        this.createNode(viewData, reslove, openOption);
+                        App.uiLoading.hide();
+                    } else {
+                        viewData.isLoaded = true;
+                        this._close(viewData);
+                        viewData.doFinish(null, className, "打开界面异常");
+                        reslove(<any>null);
+                        let uiName = "";
+                        if (DEBUG) {
+                            uiName = className;
+                        }
+                        if (openOption.name) {
+                            uiName = openOption.name;
+                        }
+                        App.tips.show(`加载界面${uiName}失败，请重试`);
+                        App.uiLoading.hide();
+                    }
+                });
+            }
+        });
+    }
+
+    private _addComponent(uiNode: Node, viewData: ViewAsset.Data, openOption: DefaultOpenOption): UIView | null {
+        if (uiNode) {
+            let className = viewData.name;
+            //挂载脚本
+            let view = uiNode.getComponent(viewData.viewType);
+            if (!view) {
+                view = uiNode.addComponent(viewData.viewType);
+                if (!view) {
+                    if (DEBUG) Log.e(`${this.module}挂载脚本失败 : ${className}`);
+                    return null;
+                }
+                else {
+                    if (DEBUG) Log.d(`${this.module}挂载脚本 : ${className}`);
+                }
+            }
+
+            view.className = className;
+            view.bundle = openOption.bundle;
+            viewData.view = view;
+            view.args = openOption.args;
+
+            //界面显示在屏幕中间
+            let widget = view.getComponent(Widget);
+            if (widget) {
+                if (DEBUG) Log.e(`${this.module}请不要在根节点挂载cc.Widget组件`);
+                widget.destroy();
+            }
+            if (!view.getComponent(AdapterView)) {
+                view.addComponent(AdapterView);
+            }
+            if (!viewData.isPreload) {
+                this.addView(uiNode, openOption.zIndex);
+            }
+            return view;
+        }
+        else {
+            return null;
+        }
+    }
+
+    private createNode(viewData: ViewAsset.Data, reslove: any, openOptions: DefaultOpenOption) {
+        viewData.isLoaded = true;
+        let className = viewData.name;
+        if (viewData.status == ViewStatus.WAITTING_CLOSE) {
+            //加载过程中有人关闭了界面
+            reslove(null);
+            if (DEBUG) Log.w(`${this.module}${className}正等待关闭`);
+            //如果此时有地方正在获取界面，直接返回空
+            viewData.doFinish(null, className, "获取界内已经关闭");
+            return;
+        }
+
+        let uiNode = instantiate(viewData.cache.data as Prefab);
+        viewData.node = uiNode;
+        let view = this._addComponent(uiNode, viewData, openOptions);
+        if (!view) {
+            reslove(null);
+            return;
+        }
+
+        if (viewData.status == ViewStatus.WATITING_HIDE) {
+            //加载过程中有人隐藏了界面
+            view.hide();
+            if (DEBUG) Log.w(`${this.module}加载过程隐藏了界面${className}`);
+            reslove(view);
+            viewData.doFinish(view, className, "加载完成，但加载过程中被隐藏");
+        }
+        else {
+            if (DEBUG) Log.d(`${this.module}open view : ${className}`)
+
+            if (!viewData.isPreload) {
+                view.show(openOptions.args);
+            }
+            reslove(view)
+            viewData.doFinish(view, className, "加载完成，回调之前加载中的界面");
+        }
+    }
+
+    private loadPrefab(
+        bundle: BUNDLE_TYPE,
+        url: string,
+        progressCallback: (completedCount: number, totalCount: number, item: any) => void,
+        onComplete: (cache: Resource.Cache) => void
+    ) {
+        App.asset.load(bundle, url, Prefab, progressCallback, (cache) => {
+            if (cache && cache.data && cache.data instanceof Prefab) {
+                onComplete(cache);
+            }
+            else {
+                onComplete(null!);
+            }
+        });
+    }
+
+    private _canvas: Node = null!;
+    private _prefabs: Node = null!;
+    private get prefabs() {
+        if (!this._prefabs && !isValid(this._prefabs)) {
+            this._prefabs = find("prefabs", this.canvas) as Node;
+        }
+        return this._prefabs;
+    }
+
+    /**@description 3d根节点 */
+    public get root3D(){
+        return find("3d",this.canvas.parent as Node) as Node;
+    }
+
+    /**@description 3d相机 */
+    public get camera3d(){
+        return find("Camera3D",this.canvas.parent as Node)?.getComponent(Camera) as Camera;
+    }
+
+    /**@description 截图cavans */
+    public get screenShotCamera(){
+        return find("ScreenShotCamera",this.canvas as Node)?.getComponent(Camera) as Camera;
+    }
+
+    public get uiCamera(){
+        return find("UICamera",this.canvas as Node)?.getComponent(Camera) as Camera;
+    }
+
+    /**@description 获取主场景预置节点 */
+    getScenePrefab(name: string) {
+        return find(name, this.prefabs);
+    }
+
+    onLoad(node: Node) {
+        this._canvas = node;
+    }
+
+    /**
+     * @description 走到这里面，说明游戏结束，或都重启游戏，直接清空,避免double free
+     * @param node 
+     */
+    onDestroy(node : Node){
+        this.clear();
+    }
+
+    get canvas(): Node {
+        return this._canvas;
+    }
+
+    public addView(node: Node, zOrder: number) {
+        App.layerMgr.add(node,zOrder);
+    }
+
+    /**@description 添加动态加载的本地资源 */
+    public addLocal(cache: Resource.Cache, className: string) {
+        let viewData = this.getViewData(className);
+        if (viewData) {
+            viewData.loadData.addLocal(cache, className);
+        }
+    }
+
+
+
+    /**@description 添加动态加载的远程资源 */
+    public addRemote(cache: Resource.Cache, className: string) {
+        let viewData = this.getViewData(className);
+        if (viewData) {
+            viewData.loadData.addRemote(cache, className);
+        }
+    }
+
+    public close<T extends UIView>(uiClass: UIClass<T>): void;
+    public close(className: string): void;
+    public close(data: any): void {
+        //当前所有界面都已经加载完成
+        let viewData = this.getViewData(data);
+        if (viewData) {
+            this._close(viewData);
+        }
+    }
+
+    private _close( data : ViewAsset.Data ){
+        let className = data.name;
+        App.releaseManger.releaseUI(data);
+        this._viewDatas.delete(className);
+        Log.d(`${this.module} close view : ${className}`);
+    }
+
+    /**@description 关闭除传入参数以外的所有其它界面,不传入，关闭所有界面 */
+    public closeExcept(views: (UIClass<UIView> | string | UIView)[]) {
+        let self = this;
+        if (views == undefined || views == null || views.length == 0) {
+            //关闭所有界面
+            if (DEBUG) Log.e(`请检查参数，至少需要保留一个界面，不然就黑屏了，大兄弟`);
+            this._viewDatas.forEach((viewData, key) => {
+                self.close(key);
+            });
+            return;
+        }
+
+        let viewClassNames = new Set<string>();
+
+        for (let i = 0; i < views.length; i++) {
+            viewClassNames.add(this.getClassName(views[i] as any));
+        }
+
+        this._viewDatas.forEach((viewData, key) => {
+            if (viewClassNames.has(key)) {
+                //如果包含，不做处理，是排除项
+                return;
+            }
+            self.close(key);
+        });
+    }
+
+    /**@description 关闭指定bundle的视图 */
+    public closeBundleView(bundle: BUNDLE_TYPE) {
+        let self = this;
+        this._viewDatas.forEach((viewData, key) => {
+            if (viewData.bundle == bundle) {
+                self.close(key);
+            }
+        });
+    }
+    public hide(className: string): void;
+    public hide<T extends UIView>(uiClass: UIClass<T>): void;
+    public hide(data: any): void {
+        let viewData = this.getViewData(data);
+        if (viewData) {
+            if (viewData.isLoaded) {
+                //已经加载完成，说明已经是直实存在的界面，按照正常游戏进行删除
+                if (viewData.view && isValid(viewData.view.node)) {
+                    viewData.view.hide();
+                }
+                if (DEBUG) Log.d(`${this.module}hide view : ${viewData.loadData.name}`);
+            }
+            else {
+                //没有加载写成，正常加载中
+                viewData.status = ViewStatus.WATITING_HIDE;
+            }
+        }
+    }
+
+    /**
+     * @description 获取指定视图,如果还没有加载完成，获取只是预加载，则返回空
+     * @param className 
+     * @param onComplete 
+     */
+    public getView(className: string, onComplete?: (view: UIView) => void): UIView;
+    /**
+     * @description 获取指定视图,如果还没有加载完成，获取只是预加载，则返回空
+     * @param uiClass 
+     * @param onComplete 
+     */
+    public getView<T extends UIView>(uiClass: UIClass<T>, onComplete?: (view: T) => void): T;
+    public getView(data: any, onComplete?: (view: any) => void): any {
+        if (data == undefined || data == null || data == "") {
+            onComplete && onComplete(null);
+            return null!;
+        }
+        let viewData = this.getViewData(data);
+        if (viewData) {
+            if (viewData.isPreload) {
+                //如果只是预加载，返回空，让使用者用open的方式打开
+                onComplete && onComplete(null);
+                return null!;
+            } else {
+                if (viewData.isLoaded) {
+                    onComplete && onComplete(viewData.view);
+                    return viewData.view;
+                }
+                else {
+                    //加载中
+                    viewData.finishCb.push(onComplete!);
+                    return null!;
+                }
+            }
+        }
+        else {
+            onComplete && onComplete(null);
+            return null!;
+        }
+    }
+
+    /**
+     * @description 获取指定视图,如果还没有加载完成，获取只是预加载，则返回空
+     * @param className 
+     */
+    public getViewAsync(className: string): Promise<UIView>;
+    /**
+     * @description 获取指定视图,如果还没有加载完成，获取只是预加载，则返回空
+     * @param uiClass
+     */
+    public getViewAsync<T extends UIView>(uiClass: UIClass<T>): Promise<T>;
+    public getViewAsync(data: any): Promise<any> {
+        return new Promise<any>((resolve, reject) => {
+            this.getView(data, (view) => {
+                resolve(view);
+            });
+        });
+    }
+
+    public checkView(url: string, className: string | null) {
+        if (DEBUG && className) {
+            this.getViewAsync(className).then((view) => {
+                if (!view) {
+                    let viewData = this.getViewData(className);
+                    if (viewData) {
+                        //预置加载返回的view是空
+                        //排除掉这种方式的
+                        if (!viewData.isPreload) {
+                            Log.e(`资源 : ${url} 的持有者必须由UIManager.open方式打开`);
+                        }
+                    } else {
+                        Log.e(`资源 : ${url} 的持有者必须由UIManager.open方式打开`);
+                    }
+                }
+            });
+        }
+    }
+
+    public isShow(className: string): boolean;
+    public isShow<T extends UIView>(uiClass: UIClass<T>): boolean;
+    public isShow(data: any) {
+        let viewData = this.getViewData(data);
+        if (!viewData || viewData.isPreload) {
+            return false;
+        }
+        if (viewData.isLoaded && viewData.status == ViewStatus.WAITTING_NONE) {
+            if (viewData.view) return viewData.view.node.active;
+        }
+        return false;
+    }
+
+    public addComponent<T extends Component>(type: { new(): T }): T;
+    public addComponent(className: string): any;
+    public addComponent(data: any) {
+        return App.layerMgr.addComponent(data)
+    }
+
+    public removeComponent(component: string | Component) {
+        App.layerMgr.removeComponent(component);
+    }
+
+    debug(){
+        Log.d(`-----------当前所有视图------------`);
+        this._viewDatas.forEach((value, key) => {
+            Log.d(`[${key}] isLoaded : ${value.isLoaded} status : ${value.status} view : ${js.getClassName(value.view)} active : ${value.view && value.view.node ? value.view.node.active : false}`);
+        });
+    }
+
+    clear(...args: any[]) {
+        this.garbage.clear();
+        this.retainMemory.clear();
+        this._viewDatas.clear();
+        this._canvas = null!;
+        this._prefabs = null!;
+    }
+}

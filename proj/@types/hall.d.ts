@@ -1,0 +1,1 @@
+/Users/peter/Desktop/workNew/QuickFramework/resources/@types/hall.d.ts

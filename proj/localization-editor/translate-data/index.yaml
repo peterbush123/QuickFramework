@@ -1,0 +1,38 @@
+locale: index
+items:
+  - - test
+    - key: test
+      value: ''
+      type: 2
+      isVariant: false
+      associations:
+        - sceneUuid: 26234e8c-e681-4111-8aca-81e8e3033b4d
+          nodeUuid: 74I4rnovpJVKLNEFJUhVqY
+          reference: 26234e8c-e681-4111-8aca-81e8e3033b4d
+      _variants: []
+  - - lang_cn
+    - key: lang_cn
+      value: ''
+      type: 2
+      isVariant: false
+      associations:
+        - sceneUuid: 26234e8c-e681-4111-8aca-81e8e3033b4d
+          nodeUuid: 35szxtoDZJHJhW9efgyW/T
+          reference: 26234e8c-e681-4111-8aca-81e8e3033b4d
+      _variants: []
+  - - lang_en
+    - key: lang_en
+      value: ''
+      type: 2
+      isVariant: false
+      associations:
+        - sceneUuid: 26234e8c-e681-4111-8aca-81e8e3033b4d
+          nodeUuid: 34hVXq4PdNZZK/hInkSWFZ
+          reference: 26234e8c-e681-4111-8aca-81e8e3033b4d
+      _variants: []
+languageConfig:
+  bcp47Tag: index
+  translateFinished: 6
+  translateTotal: 0
+  compileFinished: 0
+  compileTotal: 0

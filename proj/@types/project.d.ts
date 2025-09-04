@@ -1,0 +1,1 @@
+/Users/peter/Desktop/workNew/QuickFramework/resources/@types/project.d.ts

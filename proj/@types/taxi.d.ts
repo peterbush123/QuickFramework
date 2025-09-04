@@ -1,0 +1,1 @@
+/Users/peter/Desktop/workNew/QuickFramework/resources/@types/taxi.d.ts

@@ -1,0 +1,41 @@
+﻿syntax = "proto3";
+// network packet
+package netpkt;
+
+// ======================= 完整数据包 =======================
+message MessagePacket {
+    MessageHeader   header      = 1;    // 包头，包含协议版本、ID、请求标识等元信息
+    bytes           payload     = 2;    // 具体业务数据（序列化后的 message）
+}
+
+// ======================= 通用包头 =======================
+message MessageHeader {
+    uint32  version     = 1;    // 协议版本号，用于兼容和升级
+    uint32  main_id     = 2;    // 主协议ID（如业务模块、主命令等）
+    uint32  sub_id      = 3;    // 子协议ID（如具体命令、消息类型等）
+    uint64  request_id  = 4;    // 消息序号 / 请求标识（用于追踪请求-响应对应关系）
+    uint32  body_len    = 5;    // 数据体长度（字节数，不包含包头本身）
+    Codec   codec_type  = 6;    // 数据处理方式（加密/压缩等）
+    uint32  reserved    = 15;   // 预留扩展字段 
+
+    // 数据处理方式
+    enum Codec {
+        NONE = 0;    // 无处理
+        AES  = 1;    // AES 加密
+        RSA  = 2;    // RSA 加密
+        GZIP = 3;    // GZIP 压缩
+        ZLIB = 4;    // ZLIB 压缩
+    }
+}
+
+// ======================= 心跳命令 =======================
+enum HeartbeatCmd {
+    KN_NONE     = 0;       // 必须存在的默认值
+    KN_MAIN_ID  = 10000;   // 心跳模块 main_id
+    KN_DETECT   = 10001;   // 心跳检测响应 sub_id
+}
+
+// ======================= 心跳包 =======================
+message Heartbeat {
+    uint64  timestamp = 1;    // 心跳时间
+}
