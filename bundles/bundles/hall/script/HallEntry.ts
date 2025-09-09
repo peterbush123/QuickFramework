@@ -1,4 +1,5 @@
-import { SpriteFrame, tween } from "cc";
+import { Prefab, SpriteFrame, tween } from "cc";
+import { GameService } from "db://assets/scripts/common/net/GameService";
 import { Resource } from "db://quick/core/asset/Resource";
 import { Entry } from "db://quick/core/entry/Entry";
 import { registerEntry } from "db://quick/defines/Decorators";
@@ -23,10 +24,13 @@ class HallEntry extends Entry { //add
         this.loader.getLoadResources = () => {
             return [
                 { dir: "texture", bundle: this.bundle, type: SpriteFrame },
+                { url: "prefabs/test", bundle: this.bundle, type: Prefab },
+                { url: "prefabs/HallView", bundle: this.bundle, type: Prefab },
             ]
         };
         this.loader.onLoadStart = () => {
             App.gameLoading.show("login");
+            window.HideLoading();
         }
 
         this.loader.onLoadProgress = (loadedCount: number, total: number, data: Resource.Cache) => {
@@ -38,7 +42,7 @@ class HallEntry extends Entry { //add
             if (err == Resource.LoaderError.LOADING) {
                 return;
             }
-            App.gameLoading.onComplete();
+            App.gameLoading.onComplete(); //add jack
             tween(this.node)
                 .delay(0.2)
                 .call(() => {
@@ -54,6 +58,7 @@ class HallEntry extends Entry { //add
     protected initData(): void {
         //初始化网络
         App.serviceManager.get(LobbyService, true, "192.168.1.6", 8000);
+        App.serviceManager.get(GameService, true, "192.168.1.2", 8000);
     }
     protected pauseMessageQueue(): void {
 

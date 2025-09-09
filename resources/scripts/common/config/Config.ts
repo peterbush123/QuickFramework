@@ -7,6 +7,7 @@ import { Enum } from "cc";
  */
 export enum BundleType {
     resources,
+    fish,
     aimLine,
     eliminate,
     hall,
@@ -28,6 +29,7 @@ export enum BundleType {
 enum Sort {
     resources = 0,
     hall,
+    fish,
     aimLine,
     eliminate,
     loadTest,
@@ -116,6 +118,7 @@ export namespace Config {
     /**@description 进入后台最小时间（单位秒）大于这个时间时就会进入重连*/
     export const MIN_INBACKGROUND_TIME = 5;
     export const BUNDLES: BundleData[] = [
+        { sort: Sort.fish, type: BundleType.fish, name: { CN: "捕鱼", EN: "fish" }, bundle: eTypes[BundleType.fish] },
         { sort: Sort.aimLine, type: BundleType.aimLine, name: { CN: "瞄准线", EN: "Aim Line" }, bundle: eTypes[BundleType.aimLine] },
         { sort: Sort.eliminate, type: BundleType.eliminate, name: { CN: "爱消除", EN: "Eliminate" }, bundle: eTypes[BundleType.eliminate] },
         { sort: Sort.loadTest, type: BundleType.loadTest, name: { CN: "加载示例", EN: "Load Test" }, bundle: eTypes[BundleType.loadTest] },

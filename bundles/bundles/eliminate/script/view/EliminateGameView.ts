@@ -1,11 +1,11 @@
-import { _decorator,find ,Node, Label} from "cc";
+import { _decorator, find, Label, Node } from "cc";
+import { DEBUG } from "cc/env";
 import GameView from "db://quick/core/ui/GameView";
 import { Macro } from "db://quick/defines/Macros";
 import { EliminateData } from "../data/EliminateData";
 import { EliminateEffect } from "../data/EliminateDefines";
 import EliminateEffectsView from "./EliminateEffectsView";
 import EliminateGridView from "./EliminateGridView";
-import { DEBUG } from "cc/env";
 
 //主游戏视图
 const { ccclass, property } = _decorator;
@@ -17,17 +17,17 @@ export default class EliminateGameView extends GameView {
         return "prefabs/EliminateGameView";
     }
 
-    private effectsView : EliminateEffectsView = null!;
+    private effectsView: EliminateEffectsView = null!;
 
-    private onTest(){
+    private onTest() {
         App.tips.show("Are You Kidding Me");
         // App.tips.show("Fuck You");
     }
 
     addEvents(): void {
         super.addEvents();
-        if ( DEBUG ){
-            this.onD("测试",()=>{
+        if (DEBUG) {
+            this.onD("测试", () => {
                 Log.d(`收到测试事件`)
             })
         }
@@ -36,8 +36,8 @@ export default class EliminateGameView extends GameView {
     onLoad() {
         super.onLoad();
 
-        this.onN(find("test",this.node)!,Node.EventType.TOUCH_END,this.onTest);
-        this.onN(find("goBack", this.node)!,Node.EventType.TOUCH_END, this.onGoBack);
+        this.onN(find("test", this.node)!, Node.EventType.TOUCH_END, this.onTest);
+        this.onN(find("goBack", this.node)!, Node.EventType.TOUCH_END, this.onGoBack);
 
         //初始化游戏数据模型
         let data = App.dataCenter.get(EliminateData) as EliminateData;
@@ -49,15 +49,15 @@ export default class EliminateGameView extends GameView {
             view.initWithCellModels(data.gameModel.getCells());
         }
 
-        let effectsView = find("EffectsView",this.node);
-        if( effectsView ){
+        let effectsView = find("EffectsView", this.node);
+        if (effectsView) {
             let view = effectsView.addComponent(EliminateEffectsView);
             view.view = this;
             this.effectsView = view;
         }
 
-        let version = find("version",this.node)?.getComponent(Label);
-        if ( version ){
+        let version = find("version", this.node)?.getComponent(Label);
+        if (version) {
             version.string = App.updateManager.getVersion(this.bundle);
         }
     }
@@ -77,29 +77,29 @@ export default class EliminateGameView extends GameView {
     }
 
     playEliminate(step: number) {
-        if( step < 1 ){
+        if (step < 1) {
             step = 1;
         }
-        step = Math.min(8,step);
+        step = Math.min(8, step);
         Log.d(`playEliminate : audios/eliminate${step}`);
         this.audioHelper.playEffect(`audios/eliminate${step}`);
     }
 
     playContinuousMatch(step: number) {
         Log.d(`playContinuousMatch : step ${step}`);
-        step = Math.min(step,11);
-        if( step < 2 ){
+        step = Math.min(step, 11);
+        if (step < 2) {
             return;
         }
-        let arr = [3,5,7,9,11];
-        let index = Math.floor(step/2) -1;
+        let arr = [3, 5, 7, 9, 11];
+        let index = Math.floor(step / 2) - 1;
         let url = `audios/contnuousMatch${arr[index]}`;
         Log.d(`playContinuousMatch : ${url}`);
         this.audioHelper.playEffect(url);
     }
 
-    playEffect(effects: EliminateEffect[]){
-        if( this.effectsView ){
+    playEffect(effects: EliminateEffect[]) {
+        if (this.effectsView) {
             this.effectsView.playEffect(effects);
         }
     }

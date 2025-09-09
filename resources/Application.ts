@@ -33,11 +33,12 @@ export class Application extends Framewok {
     get tips() {
         return Singleton.get(Tips)!;
     }
-
+    /**@description 进游戏loading界面 */
     get gameLoading() {
         return Singleton.get(GameLoading)!;
     }
 
+    /**@description 游戏加载界面 */
     get uiLoading() {
         return Singleton.get(UILoading)!;
     }

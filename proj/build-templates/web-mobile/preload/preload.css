@@ -1,0 +1,49 @@
+#gavinPlay {
+
+    /* display: block;
+    position: absolute;
+
+    left: 50%;
+    top: 50%;
+
+    background: url('preload.png') center no-repeat;
+    background-size: cover;
+
+    width: 13vh;
+    height: 13vh;
+    margin-left: -6.5vh;
+    margin-top: -6.5vh;
+
+    -webkit-transform: translate3d(0, 0, 0);
+    -moz-transform: translate3d(0, 0, 0);
+    transform: translate3d(0, 0, 0);
+    -webkit-animation: play 3s linear infinite;
+    -moz-animation: play 3s linear infinite;
+    animation: play 3s linear infinite; */
+
+    display: block;
+    position: absolute;
+    top: 0%;
+    left: 0%;
+    background-image: url('logo.png');
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center center;
+    width: 100%;
+    height: 100vh;
+}
+
+/* 点点动画 */
+#animationElement {
+    font-size: 24px;
+    color: rgb(234, 177, 87);
+    text-align: center;
+    position: absolute;
+    width: 120px;
+    bottom: 40%;
+    left: 50%;
+    /* 需要设置为宽的一般 */
+    margin-left: -60px;
+    /* border: 1px solid #ccc; */
+    /* display: block; */
+}

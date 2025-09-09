@@ -1,21 +1,21 @@
-import TankBattleMapCtrl from "../logic/TankBattleMapCtrl";
+import { _decorator, EventKeyboard, find, instantiate, Label, Node, PhysicsSystem2D } from "cc";
 import GameView from "db://quick/core/ui/GameView";
-import { _decorator,Node, Label, PhysicsSystem2D, find, EventKeyboard, instantiate } from "cc";
-import { TankBattleLogic } from "../logic/TankBattleLogic";
-import { TankBettle } from "../data/TankBattleConfig";
 import { inject } from "../../../../../quick/defines/Decorators";
+import { TankBettle } from "../data/TankBattleConfig";
 import { TankBattleGameData } from "../data/TankBattleGameData";
+import { TankBattleLogic } from "../logic/TankBattleLogic";
+import TankBattleMapCtrl from "../logic/TankBattleMapCtrl";
 
 
 const { ccclass, property } = _decorator;
 
 @ccclass('TankBattleGameView')
-export default class TankBattleGameView extends GameView{
+export default class TankBattleGameView extends GameView {
 
     static logicType = TankBattleLogic;
 
-    @inject({type : TankBattleGameData.module,name : "logic"})
-    protected logic : TankBattleLogic = null!;
+    @inject({ type: TankBattleGameData.module, name: "logic" })
+    protected logic: TankBattleLogic = null!;
 
     public static getPrefabUrl() {
         return "prefabs/TankBattleGameView";
@@ -33,10 +33,10 @@ export default class TankBattleGameView extends GameView{
     private _gameLevel: Label = null!;
     private _playerOneTankLive: Label = null!;
     private _playerTwoTankLive: Label = null!;
-    @inject("Game",Node)
-    private game : Node = null!;
-    @inject("prefabs",Node)
-    private prefabs : Node = null!;
+    @inject("Game", Node)
+    private game: Node = null!;
+    @inject("prefabs", Node)
+    private prefabs: Node = null!;
 
     onLoad() {
         super.onLoad();
@@ -62,18 +62,18 @@ export default class TankBattleGameView extends GameView{
     }
 
     protected onKeyUp(ev: EventKeyboard) {
-        if ( this.logic ){
-            this.logic.onKeyUp(ev,TankBettle.ViewType.GAME_VIEW);
+        if (this.logic) {
+            this.logic.onKeyUp(ev, TankBettle.ViewType.GAME_VIEW);
         }
     }
 
     protected onKeyDown(ev: EventKeyboard) {
-        if ( this.logic ){
-            this.logic.onKeyDown(ev,TankBettle.ViewType.GAME_VIEW);
+        if (this.logic) {
+            this.logic.onKeyDown(ev, TankBettle.ViewType.GAME_VIEW);
         }
     }
 
-    public showGameInfo( gameInfo : TankBattleGameInfo ) {
+    public showGameInfo(gameInfo: TankBattleGameInfo) {
         //当前关卡
         this._gameLevel.string = gameInfo.level;
         //玩家的生命
@@ -102,7 +102,7 @@ export default class TankBattleGameView extends GameView{
     onShow(): void {
         this.enabledKeyUp = true;
         this.enabledKeyDown = true;
-        if ( this.logic ){
+        if (this.logic) {
             this.logic.gamePrefabs = this.prefabs;
             let mapCtrl = new TankBattleMapCtrl();
             mapCtrl.node = this.game;
