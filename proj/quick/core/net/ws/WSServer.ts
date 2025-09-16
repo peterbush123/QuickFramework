@@ -44,7 +44,7 @@ export class WSServer {
     get isConnected() { return this.proxy ? this.proxy.status == WebSocket.OPEN : false; }
 
     /**@description 启动服务器 */
-    async start() {
+    async start(ip: string, port: number, protocol: string) {
         return new Promise<boolean>(async (resolve, reject) => {
             if (this.proxy) {
                 if (this.proxy.ws) {
@@ -69,6 +69,8 @@ export class WSServer {
                 this.proxy = new WSProxy();
             }
             this.proxy.options = this.options;
+            let url = `${protocol}://${ip}:${port}`;
+            this.options.url = url;
             const success = await this.proxy.connect(this.options.url, this.options.timeOut);
             if (!success) {
                 await this.stop();

@@ -1,10 +1,10 @@
 import { CmmProto } from "db://assets/scripts/common/net/CmmProto";
 import { GameService } from "db://assets/scripts/common/net/GameService";
-import { Handler } from "db://quick/core/net/service/Handler";
+import GameHandler from "db://assets/scripts/gameFrame/GameHandler";
 import { inject } from "db://quick/defines/Decorators";
 import { HallProtoConfig } from "../../../hall/proto/HallProtoConfig";
 
-export default class FishGameHandler extends Handler {
+export default class FishGameHandler extends GameHandler {
 
     static module = "fishGame"
     @inject({ type: GameService, name: "service" })

@@ -57,8 +57,8 @@ class HallEntry extends Entry { //add
     }
     protected initData(): void {
         //初始化网络
-        App.serviceManager.get(LobbyService, true, "192.168.1.6", 8000);
-        App.serviceManager.get(GameService, true, "192.168.1.2", 8000);
+        App.serviceManager.get(LobbyService, true);
+        App.serviceManager.get(GameService, true);
     }
     protected pauseMessageQueue(): void {
 

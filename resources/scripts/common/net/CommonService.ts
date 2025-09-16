@@ -115,10 +115,10 @@ export class CommonService extends WSService {
         return App.stageData;
     }
 
-    constructor(module: string, ip: string, port: number) {
+    constructor(module: string) {
         super(module);
-        ip && (this.ip = ip);
-        port && (this.port = port);
+        // ip && (this.ip = ip);
+        // port && (this.port = port);
         let options: IWSServiceOptions = {
             url: `${this.protocol}://${this.ip}:${this.port}`,
             tag: module,

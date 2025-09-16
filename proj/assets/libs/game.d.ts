@@ -1,3 +1,6 @@
+/** 是否打开DEBUG */
+declare var CC_DEBUG: boolean;
+
 interface Window {
     /** 获取当前网页参数数据 */
     GetHtmlQueryVariable(variable: string): string;

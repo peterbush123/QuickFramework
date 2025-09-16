@@ -304,9 +304,13 @@ export abstract class WSService implements IWSMsgHandler, ISingleton {
     }
 
     /**@description 启动服务器 */
-    start() {
-        return this.server.start();
+    start(ip: string, port: number, protocol: string) {
+        return this.server.start(ip, port, protocol);
     }
+
+    // connct(ip: string, port: number, protocol: string) {
+    //     return this.server.start(ip, port, protocol);
+    // }
 
     /**@description 停止服务器 */
     stop() {
